@@ -1,0 +1,41 @@
+{
+  "discord": {
+    "token": "YOUR_DISCORD_BOT_TOKEN",
+    "clientId": "YOUR_DISCORD_CLIENT_ID",
+    "guildId": "OPTIONAL_SERVER_ID_FOR_INSTANT_COMMANDS",
+    "announcementChannelId": "YOUR_DEFAULT_ANNOUNCEMENT_CHANNEL_ID",
+    "announcementRoleId": "YOUR_DEFAULT_ANNOUNCEMENT_ROLE_ID"
+  },
+  "pollingIntervalSeconds": 60,
+  "twitch": {
+    "enabled": true,
+    "clientId": "YOUR_TWITCH_CLIENT_ID",
+    "clientSecret": "YOUR_TWITCH_CLIENT_SECRET",
+    "streamers": [
+      {
+        "username": "shroud",
+        "discordChannelId": "123456789012345678",
+        "roleId": "987654321098765432",
+        "customMessage": "{role} 🔴 **{streamer}** is now **LIVE** on Twitch playing **{game}**!\n👉 {url}"
+      },
+      {
+        "username": "tarik",
+        "discordChannelId": "123456789012345678",
+        "roleId": "987654321098765432"
+      }
+    ]
+  },
+  "youtube": {
+    "enabled": true,
+    "apiKey": "",
+    "channels": [
+      {
+        "channelId": "UC_x5XG1OV2P6uZZ5FSM9Ttw",
+        "channelName": "Google Developers",
+        "discordChannelId": "123456789012345678",
+        "roleId": "987654321098765432",
+        "customMessage": "{role} 🎬 New video released on YouTube by **{channel}**!\n👉 **{title}**\n{url}"
+      }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "discordherald",
+  "version": "1.0.0",
+  "description": "Discord Bot for Twitch live stream & YouTube video role notifications",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test:mock": "tsx src/test/mockTest.ts"
+  },
+  "keywords": [
+    "discord-bot",
+    "twitch",
+    "youtube",
+    "notifications",
+    "stream-alerts"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^14.18.0",
+    "dotenv": "^16.4.7",
+    "fast-xml-parser": "^4.5.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
