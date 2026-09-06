@@ -22,7 +22,7 @@
   "dependencies": {
     "discord.js": "^14.18.0",
     "dotenv": "^16.4.7",
-    "fast-xml-parser": "^4.5.3"
+    "fast-xml-parser": "^5.11.1"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",

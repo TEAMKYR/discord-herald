@@ -254,7 +254,7 @@ export class TwitchWatcher extends BaseWatcher {
     // Role ping text formatting: e.g. <@&ROLE_ID>
     const roleMention = streamer.roleId ? `<@&${streamer.roleId}>` : '';
 
-    let content = streamer.customMessage || '{role} 🔴 **{streamer}** is now **LIVE** on Twitch!';
+    let content = streamer.customMessage || '{role} 🔴 **{streamer}** is now **LIVE** on Twitch! \n**{title}**';
     content = content
       .replace('{role}', roleMention)
       .replace('{streamer}', displayName)
@@ -270,7 +270,7 @@ export class TwitchWatcher extends BaseWatcher {
 
     const embed = new EmbedBuilder()
       .setColor(0x9146ff) // Official Twitch purple
-      .setTitle(`🔴 ${title}`)
+      .setTitle(`${title}`)
       .setURL(streamUrl)
       .setAuthor({
         name: `${displayName} is now streaming!`,
@@ -280,13 +280,13 @@ export class TwitchWatcher extends BaseWatcher {
       .addFields(
         { name: '🎮 Game / Category', value: gameName, inline: true },
         { name: '👥 Viewers', value: `${stream.viewer_count.toLocaleString()}`, inline: true },
-        { name: '🔗 Stream Link', value: `[Watch Stream](${streamUrl})`, inline: true }
+        //{ name: '🔗 Stream Link', value: `[Watch Stream](${streamUrl})`, inline: true }
       )
       .setImage(thumbnailUrl)
       .setTimestamp(new Date(stream.started_at || Date.now()))
       .setFooter({
         text: 'Twitch Live Notification • DiscordHerald',
-        iconURL: 'https://static-cdn.jtvnw.net/jtv_user_pictures/twitch-logo.png',
+        //iconURL: 'https://static-cdn.jtvnw.net/jtv_user_pictures/twitch-logo.png',
       });
 
     const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
