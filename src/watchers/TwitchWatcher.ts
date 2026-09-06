@@ -323,13 +323,13 @@ export class TwitchWatcher extends BaseWatcher {
       user_id: '123456',
       user_login: streamer.username.toLowerCase(),
       user_name: streamer.username,
-      game_id: '509658',
-      game_name: 'Just Chatting',
+      game_id: '516575',
+      game_name: 'VALORANT',
       type: 'live',
-      title: '🔴 [TEST STREAM] Chilling & Hanging Out with the Community! 🎉',
-      viewer_count: 1337,
-      started_at: new Date().toISOString(),
-      thumbnail_url: 'https://static-cdn.jtvnw.net/previews-ttv/live_user_{user}-1280x720.jpg',
+      title: 'My duo got banned from MY discord server...TWICE | !commands',
+      viewer_count: 2,
+      started_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+      thumbnail_url: `https://static-cdn.jtvnw.net/previews-ttv/live_user_${streamer.username.toLowerCase()}-{width}x{height}.jpg`,
     };
 
     return this.buildNotificationPayload(streamer, mockStream);
