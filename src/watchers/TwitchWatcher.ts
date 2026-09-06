@@ -254,7 +254,7 @@ export class TwitchWatcher extends BaseWatcher {
     // Role ping text formatting: e.g. <@&ROLE_ID>
     const roleMention = streamer.roleId ? `<@&${streamer.roleId}>` : '';
 
-    let content = streamer.customMessage || '{role} 🔴 **{streamer}** is now **LIVE** on Twitch! \n**{title}**';
+    let content = streamer.customMessage || '{role} 🔴 **{streamer}** is now **LIVE** on Twitch! \n**{title}**\n {url}';
     content = content
       .replace('{role}', roleMention)
       .replace('{streamer}', displayName)
