@@ -291,6 +291,9 @@ export class DiscordService {
         content: payload.content,
         embeds: [payload.embed],
         components: payload.components || [],
+        allowedMentions: {
+          parse: ['roles', 'users', 'everyone'],
+        },
       });
 
       console.log(`[DiscordService] Sent ${payload.platform} announcement for ${payload.displayName} to #${textChannel.name} (${textChannel.id})`);

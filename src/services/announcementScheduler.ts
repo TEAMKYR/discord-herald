@@ -7,6 +7,7 @@ import {
 } from 'discord.js';
 import { ScheduledAnnouncement } from '../types/index.js';
 import { StateStore } from './stateStore.js';
+import { formatRoleMention } from '../utils/roleFormatter.js';
 
 export class AnnouncementSchedulerService {
   private client: Client;
@@ -100,7 +101,7 @@ export class AnnouncementSchedulerService {
       }
 
       const textChannel = channel as TextChannel | NewsChannel;
-      const roleMention = ann.roleId ? `<@&${ann.roleId}>` : '';
+      const roleMention = formatRoleMention(ann.roleId);
 
       let sentMessage;
 
@@ -117,11 +118,13 @@ export class AnnouncementSchedulerService {
         sentMessage = await textChannel.send({
           content: roleMention || undefined,
           embeds: [embed],
+          allowedMentions: { parse: ['roles', 'users', 'everyone'] },
         });
       } else {
         const fullText = roleMention ? `${roleMention}\n${ann.message}` : ann.message;
         sentMessage = await textChannel.send({
           content: fullText,
+          allowedMentions: { parse: ['roles', 'users', 'everyone'] },
         });
       }
 

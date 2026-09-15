@@ -5,6 +5,7 @@ import { TwitchWatcher } from '../watchers/TwitchWatcher.js';
 import { YouTubeWatcher } from '../watchers/YouTubeWatcher.js';
 import { StateStore } from '../services/stateStore.js';
 import { BotConfig } from '../types/index.js';
+import { formatRoleMention, normalizeRoleId } from '../utils/roleFormatter.js';
 
 export async function handleHeraldCommand(
   interaction: ChatInputCommandInteraction,
@@ -122,6 +123,10 @@ export async function handleHeraldCommand(
     const role = interaction.options.getRole('role', true);
     const target = interaction.options.getString('target') || undefined;
 
+    const normalizedRoleId = normalizeRoleId(role, interaction.guildId);
+    const mentionDisplay = formatRoleMention(normalizedRoleId, interaction.guildId);
+    const roleLabel = role.name === '@everyone' ? '@everyone' : role.name;
+
     if (platform === 'twitch') {
       if (!twitchWatcher) {
         await interaction.reply({
@@ -131,7 +136,7 @@ export async function handleHeraldCommand(
         return;
       }
 
-      const result = twitchWatcher.setStreamerRole(target, role.id);
+      const result = twitchWatcher.setStreamerRole(target, normalizedRoleId);
       if (result.count === 0) {
         await interaction.reply({
           content: target
@@ -145,9 +150,9 @@ export async function handleHeraldCommand(
       const embed = new EmbedBuilder()
         .setColor(0x9146ff)
         .setTitle('🟣 Twitch Notification Role Updated')
-        .setDescription(`Successfully set notification role to <@&${role.id}>!`)
+        .setDescription(`Successfully set notification role to ${mentionDisplay}!`)
         .addFields(
-          { name: '👥 Target Role', value: `<@&${role.id}> (\`${role.name}\`)`, inline: true },
+          { name: '👥 Target Role', value: `${mentionDisplay} (\`${roleLabel}\`)`, inline: true },
           { name: '🎯 Streamer(s) Affected', value: result.targets.map((t) => `• **${t}**`).join('\n') || 'All', inline: true }
         )
         .setTimestamp();
@@ -165,7 +170,7 @@ export async function handleHeraldCommand(
         return;
       }
 
-      const result = youtubeWatcher.setChannelRole(target, role.id);
+      const result = youtubeWatcher.setChannelRole(target, normalizedRoleId);
       if (result.count === 0) {
         await interaction.reply({
           content: target
@@ -179,9 +184,9 @@ export async function handleHeraldCommand(
       const embed = new EmbedBuilder()
         .setColor(0xff0000)
         .setTitle('🔴 YouTube Notification Role Updated')
-        .setDescription(`Successfully set notification role to <@&${role.id}>!`)
+        .setDescription(`Successfully set notification role to ${mentionDisplay}!`)
         .addFields(
-          { name: '👥 Target Role', value: `<@&${role.id}> (\`${role.name}\`)`, inline: true },
+          { name: '👥 Target Role', value: `${mentionDisplay} (\`${roleLabel}\`)`, inline: true },
           { name: '🎯 Channel(s) Affected', value: result.targets.map((t) => `• **${t}**`).join('\n') || 'All', inline: true }
         )
         .setTimestamp();
@@ -192,20 +197,20 @@ export async function handleHeraldCommand(
 
     if (platform === 'announcements') {
       if (config) {
-        config.discord.announcementRoleId = role.id;
+        config.discord.announcementRoleId = normalizedRoleId;
       }
       if (stateStore) {
         const overrides = stateStore.getSection<{ announcements?: string }>('roleOverrides') || {};
-        overrides.announcements = role.id;
+        overrides.announcements = normalizedRoleId;
         stateStore.setSection('roleOverrides', overrides);
       }
 
       const embed = new EmbedBuilder()
         .setColor(0x5865f2)
         .setTitle('📢 Announcements Role Updated')
-        .setDescription(`Successfully updated default announcement role to <@&${role.id}>!`)
+        .setDescription(`Successfully updated default announcement role to ${mentionDisplay}!`)
         .addFields(
-          { name: '👥 Target Role', value: `<@&${role.id}> (\`${role.name}\`)`, inline: true }
+          { name: '👥 Target Role', value: `${mentionDisplay} (\`${roleLabel}\`)`, inline: true }
         )
         .setTimestamp();
 
@@ -311,7 +316,7 @@ export async function handleHeraldCommand(
       const streamers = twitchWatcher.getStreamers();
       if (streamers.length > 0) {
         const twitchLines = streamers.map((s) => {
-          const roleStr = s.roleId ? `<@&${s.roleId}>` : '*None (No Ping)*';
+          const roleStr = s.roleId ? formatRoleMention(s.roleId, interaction.guildId) : '*None (No Ping)*';
           const chanStr = s.discordChannelId ? `<#${s.discordChannelId}>` : '*Not Set*';
           return `• **${s.username}**: ${roleStr} ➜ Channel: ${chanStr}`;
         });
@@ -334,7 +339,7 @@ export async function handleHeraldCommand(
       const channels = youtubeWatcher.getChannels();
       if (channels.length > 0) {
         const ytLines = channels.map((c) => {
-          const roleStr = c.roleId ? `<@&${c.roleId}>` : '*None (No Ping)*';
+          const roleStr = c.roleId ? formatRoleMention(c.roleId, interaction.guildId) : '*None (No Ping)*';
           const chanStr = c.discordChannelId ? `<#${c.discordChannelId}>` : '*Not Set*';
           const name = c.channelName || c.channelId;
           return `• **${name}**: ${roleStr} ➜ Channel: ${chanStr}`;
@@ -356,7 +361,7 @@ export async function handleHeraldCommand(
     // 3. Announcements / Other
     const annRole = config?.discord.announcementRoleId;
     const annChan = config?.discord.announcementChannelId;
-    const annRoleStr = annRole ? `<@&${annRole}>` : '*None (No Ping)*';
+    const annRoleStr = annRole ? formatRoleMention(annRole, interaction.guildId) : '*None (No Ping)*';
     const annChanStr = annChan ? `<#${annChan}>` : '*None (Uses command channel)*';
 
     embed.addFields({

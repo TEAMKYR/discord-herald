@@ -239,6 +239,32 @@ async function runMockTests() {
   }
   console.log('   ✅ Watcher rehydration with persistent role overrides verified.');
 
+  // Test 9: @everyone and @here Role Handling (No double-at formatting)
+  console.log('\n9️⃣ Testing @everyone & @here Role Mentions...');
+  // Setting role to 'everyone'
+  twitchWatcher.setStreamerRole('shroud', 'everyone');
+  const everyonePayload = await twitchWatcher.generateTestPayload('shroud');
+  if (
+    !everyonePayload?.content.startsWith('@everyone') ||
+    everyonePayload.content.includes('@@everyone') ||
+    everyonePayload.content.includes('<@&everyone>')
+  ) {
+    throw new Error(`@everyone payload formatting failed: "${everyonePayload?.content}"`);
+  }
+  console.log('   ✅ @everyone formatted correctly as "@everyone" without double-at.');
+
+  // Setting role using guildId snowflake (representing Discord's @everyone role object)
+  const mockGuildId = '123456789012345678';
+  const roleObject = { id: mockGuildId, name: '@everyone' };
+  const { normalizeRoleId } = await import('../utils/roleFormatter.js');
+  const normalizedFromObj = normalizeRoleId(roleObject, mockGuildId);
+  twitchWatcher.setStreamerRole('shroud', normalizedFromObj);
+  const everyoneFromObjPayload = await twitchWatcher.generateTestPayload('shroud');
+  if (!everyoneFromObjPayload?.content.startsWith('@everyone') || everyoneFromObjPayload.content.includes('@@everyone')) {
+    throw new Error(`@everyone from Discord Role object failed: "${everyoneFromObjPayload?.content}"`);
+  }
+  console.log('   ✅ Discord @everyone Role object normalized and formatted as "@everyone".');
+
   console.log('\n🎉 ALL TESTS PASSED SUCCESSFULLY!');
 }
 

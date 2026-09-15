@@ -9,6 +9,7 @@ import {
 import { BotConfig, ScheduledAnnouncement } from '../types/index.js';
 import { AnnouncementSchedulerService } from '../services/announcementScheduler.js';
 import { parseScheduleTime } from '../utils/timeParser.js';
+import { formatRoleMention, normalizeRoleId } from '../utils/roleFormatter.js';
 
 export async function handleAnnounceCommand(
   interaction: ChatInputCommandInteraction,
@@ -124,10 +125,11 @@ async function resolveTargetChannel(
 function resolveRoleMention(interaction: ChatInputCommandInteraction, config: BotConfig): string {
   const targetRole = interaction.options.getRole('role');
   if (targetRole) {
-    return `<@&${targetRole.id}>`;
+    const normalized = normalizeRoleId(targetRole, interaction.guildId);
+    return formatRoleMention(normalized, interaction.guildId);
   }
   if (config.discord.announcementRoleId) {
-    return `<@&${config.discord.announcementRoleId}>`;
+    return formatRoleMention(config.discord.announcementRoleId, interaction.guildId);
   }
   return '';
 }
@@ -173,10 +175,14 @@ async function handleSendSubcommand(
       sentMessage = await targetChannel.send({
         content: roleMention || undefined,
         embeds: [embed],
+        allowedMentions: { parse: ['roles', 'users', 'everyone'] },
       });
     } else {
       const fullText = roleMention ? `${roleMention}\n${messageText}` : messageText;
-      sentMessage = await targetChannel.send({ content: fullText });
+      sentMessage = await targetChannel.send({
+        content: fullText,
+        allowedMentions: { parse: ['roles', 'users', 'everyone'] },
+      });
     }
 
     if (pinMessage && sentMessage.pinnable) {
@@ -230,7 +236,11 @@ async function handleScheduleSubcommand(
     return;
   }
 
-  const roleId = targetRole?.id || config.discord.announcementRoleId || undefined;
+  const roleId = targetRole
+    ? normalizeRoleId(targetRole, interaction.guildId)
+    : config.discord.announcementRoleId
+    ? normalizeRoleId(config.discord.announcementRoleId, interaction.guildId)
+    : undefined;
   const timestampUnix = Math.floor(parsed.date.getTime() / 1000);
   const announcementId = `ann-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
 
@@ -261,7 +271,7 @@ async function handleScheduleSubcommand(
     .addFields(
       { name: '🆔 Announcement ID', value: `\`${announcementId}\``, inline: true },
       { name: '📢 Channel', value: `<#${targetChannel.id}>`, inline: true },
-      { name: '👥 Target Role', value: roleId ? `<@&${roleId}>` : '*None*', inline: true },
+      { name: '👥 Target Role', value: roleId ? formatRoleMention(roleId, interaction.guildId) : '*None*', inline: true },
       { name: '📝 Message Preview', value: messageText.length > 200 ? `${messageText.substring(0, 197)}...` : messageText }
     )
     .setFooter({ text: `Use /announce cancel id:${announcementId} to cancel` });
@@ -296,7 +306,7 @@ async function handleListSubcommand(
     const unix = Math.floor(new Date(ann.scheduledFor).getTime() / 1000);
     const title = ann.title ? `**${ann.title}**\n` : '';
     const preview = ann.message.length > 100 ? `${ann.message.substring(0, 97)}...` : ann.message;
-    const role = ann.roleId ? ` | Role: <@&${ann.roleId}>` : '';
+    const role = ann.roleId ? ` | Role: ${formatRoleMention(ann.roleId, interaction.guildId)}` : '';
 
     embed.addFields({
       name: `⏰ <t:${unix}:R> (<t:${unix}:f>)`,

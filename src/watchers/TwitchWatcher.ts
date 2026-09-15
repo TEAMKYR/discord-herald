@@ -2,6 +2,7 @@ import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'disc
 import { BaseWatcher } from './BaseWatcher.js';
 import { TwitchConfig, NotificationPayload, WatcherStatus, StreamerTarget } from '../types/index.js';
 import { StateStore } from '../services/stateStore.js';
+import { formatRoleMention, normalizeRoleId } from '../utils/roleFormatter.js';
 
 interface TwitchTokenResponse {
   access_token: string;
@@ -81,12 +82,14 @@ export class TwitchWatcher extends BaseWatcher {
     const overrides = this.stateStore.getSection<{ twitch?: Record<string, string> }>('roleOverrides') || {};
     if (!overrides.twitch) overrides.twitch = {};
 
+    const normalized = roleId ? normalizeRoleId(roleId) : undefined;
+
     for (const streamer of this.config.streamers) {
       const key = streamer.username.toLowerCase();
       if (!username || key === username.toLowerCase()) {
-        streamer.roleId = roleId || undefined;
-        if (roleId) {
-          overrides.twitch[key] = roleId;
+        streamer.roleId = normalized;
+        if (normalized) {
+          overrides.twitch[key] = normalized;
         } else {
           delete overrides.twitch[key];
         }
@@ -292,8 +295,8 @@ export class TwitchWatcher extends BaseWatcher {
     const gameName = stream.game_name || 'Just Chatting';
     const title = stream.title || 'Live Stream';
 
-    // Role ping text formatting: e.g. <@&ROLE_ID>
-    const roleMention = streamer.roleId ? `<@&${streamer.roleId}>` : '';
+    // Role ping text formatting: e.g. <@&ROLE_ID> or @everyone
+    const roleMention = formatRoleMention(streamer.roleId);
 
     let content = streamer.customMessage || '{role} 🔴 **{streamer}** is now **LIVE** on Twitch! \n**{title}**\n {url}';
     content = content

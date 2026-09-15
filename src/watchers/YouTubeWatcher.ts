@@ -3,6 +3,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { BaseWatcher } from './BaseWatcher.js';
 import { YouTubeConfig, NotificationPayload, WatcherStatus, YouTubeChannelTarget } from '../types/index.js';
 import { StateStore } from '../services/stateStore.js';
+import { formatRoleMention, normalizeRoleId } from '../utils/roleFormatter.js';
 
 interface YouTubeFeedItem {
   id: string; // 'yt:video:VIDEO_ID'
@@ -78,6 +79,8 @@ export class YouTubeWatcher extends BaseWatcher {
     const overrides = this.stateStore.getSection<{ youtube?: Record<string, string> }>('roleOverrides') || {};
     if (!overrides.youtube) overrides.youtube = {};
 
+    const normalized = roleId ? normalizeRoleId(roleId) : undefined;
+
     for (const ch of this.config.channels) {
       const match =
         !channelIdentifier ||
@@ -85,10 +88,10 @@ export class YouTubeWatcher extends BaseWatcher {
         (ch.channelName && ch.channelName.toLowerCase() === channelIdentifier.toLowerCase());
 
       if (match) {
-        ch.roleId = roleId || undefined;
+        ch.roleId = normalized;
         const key = ch.channelId.toLowerCase();
-        if (roleId) {
-          overrides.youtube[key] = roleId;
+        if (normalized) {
+          overrides.youtube[key] = normalized;
         } else {
           delete overrides.youtube[key];
         }
@@ -239,7 +242,7 @@ export class YouTubeWatcher extends BaseWatcher {
       thumbnailUrl: string;
     }
   ): NotificationPayload {
-    const roleMention = target.roleId ? `<@&${target.roleId}>` : '';
+    const roleMention = formatRoleMention(target.roleId);
     const channelName = video.authorName || target.channelName || 'YouTube Creator';
 
     let content = target.customMessage || '{role} 🎬 New video from **{channel}**!';
