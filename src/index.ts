@@ -17,6 +17,12 @@ async function bootstrap() {
   // 2. Initialize Persistent State Store
   const stateStore = new StateStore();
 
+  // Apply persistent announcement role override if present
+  const roleOverrides = stateStore.getSection<{ announcements?: string }>('roleOverrides');
+  if (roleOverrides?.announcements) {
+    config.discord.announcementRoleId = roleOverrides.announcements;
+  }
+
   // 3. Initialize Discord Service
   const discordService = new DiscordService(config);
   const client = discordService.getClient();
@@ -57,7 +63,7 @@ async function bootstrap() {
 
     try {
       if (interaction.commandName === 'herald') {
-        await handleHeraldCommand(interaction, scheduler, discordService);
+        await handleHeraldCommand(interaction, scheduler, discordService, stateStore, config);
       } else if (interaction.commandName === 'announce') {
         await handleAnnounceCommand(interaction, config, announcementScheduler);
       }

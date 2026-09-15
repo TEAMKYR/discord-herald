@@ -76,6 +76,12 @@ export interface WatcherStatus {
   details?: string;
 }
 
+export interface RoleOverrides {
+  twitch?: Record<string, string>; // username (lowercase) -> roleId
+  youtube?: Record<string, string>; // channelId or channelName (lowercase) -> roleId
+  announcements?: string; // default roleId for announcements
+}
+
 export interface AppState {
   twitch: Record<string, {
     isLive: boolean;
@@ -89,5 +95,7 @@ export interface AppState {
     lastVideoTitle?: string;
   }>;
   scheduledAnnouncements?: ScheduledAnnouncement[];
+  roleOverrides?: RoleOverrides;
   [key: string]: any; // Allows custom expansion watchers to store arbitrary state
 }
+

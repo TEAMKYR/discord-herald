@@ -87,6 +87,61 @@ export class DiscordService {
                 )
             )
         )
+        .addSubcommand((sub) =>
+          sub
+            .setName('setrole')
+            .setDescription('Set the notification role for Twitch, YouTube, or Announcements')
+            .addStringOption((opt) =>
+              opt
+                .setName('platform')
+                .setDescription('Platform to configure')
+                .setRequired(true)
+                .addChoices(
+                  { name: 'Twitch Streams', value: 'twitch' },
+                  { name: 'YouTube Videos', value: 'youtube' },
+                  { name: 'Announcements / Other', value: 'announcements' }
+                )
+            )
+            .addRoleOption((opt) =>
+              opt
+                .setName('role')
+                .setDescription('Role to ping for notifications')
+                .setRequired(true)
+            )
+            .addStringOption((opt) =>
+              opt
+                .setName('target')
+                .setDescription('Optional: Streamer username or YouTube channel ID/name (defaults to all)')
+                .setRequired(false)
+            )
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName('clearrole')
+            .setDescription('Remove notification role ping for Twitch, YouTube, or Announcements')
+            .addStringOption((opt) =>
+              opt
+                .setName('platform')
+                .setDescription('Platform to clear')
+                .setRequired(true)
+                .addChoices(
+                  { name: 'Twitch Streams', value: 'twitch' },
+                  { name: 'YouTube Videos', value: 'youtube' },
+                  { name: 'Announcements / Other', value: 'announcements' }
+                )
+            )
+            .addStringOption((opt) =>
+              opt
+                .setName('target')
+                .setDescription('Optional: Specific streamer or YouTube channel (defaults to all)')
+                .setRequired(false)
+            )
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName('roles')
+            .setDescription('View all current notification roles across all platforms')
+        )
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
 
       new SlashCommandBuilder()

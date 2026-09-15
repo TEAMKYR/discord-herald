@@ -39,6 +39,9 @@ export class YouTubeWatcher extends BaseWatcher {
       attributeNamePrefix: '@_',
     });
 
+    // Apply any persisted role overrides
+    this.applyRoleOverrides();
+
     for (const ch of this.config.channels) {
       this.statuses.set(ch.channelId, {
         platform: 'YouTube',
@@ -49,6 +52,52 @@ export class YouTubeWatcher extends BaseWatcher {
         lastEventTime: null,
       });
     }
+  }
+
+  public applyRoleOverrides(): void {
+    const overrides = this.stateStore.getSection<{ youtube?: Record<string, string> }>('roleOverrides');
+    if (overrides?.youtube) {
+      for (const ch of this.config.channels) {
+        const idKey = ch.channelId.toLowerCase();
+        const nameKey = (ch.channelName || '').toLowerCase();
+        if (idKey in overrides.youtube) {
+          ch.roleId = overrides.youtube[idKey] || undefined;
+        } else if (nameKey && nameKey in overrides.youtube) {
+          ch.roleId = overrides.youtube[nameKey] || undefined;
+        }
+      }
+    }
+  }
+
+  public getChannels(): YouTubeChannelTarget[] {
+    return this.config.channels;
+  }
+
+  public setChannelRole(channelIdentifier?: string, roleId?: string): { count: number; targets: string[] } {
+    const updatedTargets: string[] = [];
+    const overrides = this.stateStore.getSection<{ youtube?: Record<string, string> }>('roleOverrides') || {};
+    if (!overrides.youtube) overrides.youtube = {};
+
+    for (const ch of this.config.channels) {
+      const match =
+        !channelIdentifier ||
+        ch.channelId.toLowerCase() === channelIdentifier.toLowerCase() ||
+        (ch.channelName && ch.channelName.toLowerCase() === channelIdentifier.toLowerCase());
+
+      if (match) {
+        ch.roleId = roleId || undefined;
+        const key = ch.channelId.toLowerCase();
+        if (roleId) {
+          overrides.youtube[key] = roleId;
+        } else {
+          delete overrides.youtube[key];
+        }
+        updatedTargets.push(ch.channelName || ch.channelId);
+      }
+    }
+
+    this.stateStore.setSection('roleOverrides', overrides);
+    return { count: updatedTargets.length, targets: updatedTargets };
   }
 
   public isEnabled(): boolean {

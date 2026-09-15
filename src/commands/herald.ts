@@ -1,13 +1,27 @@
 import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 import { SchedulerService } from '../services/scheduler.js';
 import { DiscordService } from '../services/discord.js';
+import { TwitchWatcher } from '../watchers/TwitchWatcher.js';
+import { YouTubeWatcher } from '../watchers/YouTubeWatcher.js';
+import { StateStore } from '../services/stateStore.js';
+import { BotConfig } from '../types/index.js';
 
 export async function handleHeraldCommand(
   interaction: ChatInputCommandInteraction,
   scheduler: SchedulerService,
-  discordService: DiscordService
+  discordService: DiscordService,
+  stateStore?: StateStore,
+  config?: BotConfig
 ): Promise<void> {
   const subcommand = interaction.options.getSubcommand();
+
+  // Find watchers from scheduler
+  const twitchWatcher = scheduler
+    .getWatchers()
+    .find((w) => w instanceof TwitchWatcher) as TwitchWatcher | undefined;
+  const youtubeWatcher = scheduler
+    .getWatchers()
+    .find((w) => w instanceof YouTubeWatcher) as YouTubeWatcher | undefined;
 
   if (subcommand === 'status') {
     const watchers = scheduler.getWatchers();
@@ -100,6 +114,262 @@ export async function handleHeraldCommand(
         content: `❌ Failed to send test notification. Check bot permissions (Send Messages, Embed Links).`,
       });
     }
+    return;
+  }
+
+  if (subcommand === 'setrole') {
+    const platform = interaction.options.getString('platform', true);
+    const role = interaction.options.getRole('role', true);
+    const target = interaction.options.getString('target') || undefined;
+
+    if (platform === 'twitch') {
+      if (!twitchWatcher) {
+        await interaction.reply({
+          content: '❌ Twitch watcher is not available.',
+          ephemeral: true,
+        });
+        return;
+      }
+
+      const result = twitchWatcher.setStreamerRole(target, role.id);
+      if (result.count === 0) {
+        await interaction.reply({
+          content: target
+            ? `❌ Could not find configured Twitch streamer matching \`${target}\`.`
+            : '❌ No Twitch streamers configured in config.json.',
+          ephemeral: true,
+        });
+        return;
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(0x9146ff)
+        .setTitle('🟣 Twitch Notification Role Updated')
+        .setDescription(`Successfully set notification role to <@&${role.id}>!`)
+        .addFields(
+          { name: '👥 Target Role', value: `<@&${role.id}> (\`${role.name}\`)`, inline: true },
+          { name: '🎯 Streamer(s) Affected', value: result.targets.map((t) => `• **${t}**`).join('\n') || 'All', inline: true }
+        )
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+      return;
+    }
+
+    if (platform === 'youtube') {
+      if (!youtubeWatcher) {
+        await interaction.reply({
+          content: '❌ YouTube watcher is not available.',
+          ephemeral: true,
+        });
+        return;
+      }
+
+      const result = youtubeWatcher.setChannelRole(target, role.id);
+      if (result.count === 0) {
+        await interaction.reply({
+          content: target
+            ? `❌ Could not find configured YouTube channel matching \`${target}\`.`
+            : '❌ No YouTube channels configured in config.json.',
+          ephemeral: true,
+        });
+        return;
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(0xff0000)
+        .setTitle('🔴 YouTube Notification Role Updated')
+        .setDescription(`Successfully set notification role to <@&${role.id}>!`)
+        .addFields(
+          { name: '👥 Target Role', value: `<@&${role.id}> (\`${role.name}\`)`, inline: true },
+          { name: '🎯 Channel(s) Affected', value: result.targets.map((t) => `• **${t}**`).join('\n') || 'All', inline: true }
+        )
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+      return;
+    }
+
+    if (platform === 'announcements') {
+      if (config) {
+        config.discord.announcementRoleId = role.id;
+      }
+      if (stateStore) {
+        const overrides = stateStore.getSection<{ announcements?: string }>('roleOverrides') || {};
+        overrides.announcements = role.id;
+        stateStore.setSection('roleOverrides', overrides);
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(0x5865f2)
+        .setTitle('📢 Announcements Role Updated')
+        .setDescription(`Successfully updated default announcement role to <@&${role.id}>!`)
+        .addFields(
+          { name: '👥 Target Role', value: `<@&${role.id}> (\`${role.name}\`)`, inline: true }
+        )
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+      return;
+    }
+  }
+
+  if (subcommand === 'clearrole') {
+    const platform = interaction.options.getString('platform', true);
+    const target = interaction.options.getString('target') || undefined;
+
+    if (platform === 'twitch') {
+      if (!twitchWatcher) {
+        await interaction.reply({ content: '❌ Twitch watcher is not available.', ephemeral: true });
+        return;
+      }
+
+      const result = twitchWatcher.setStreamerRole(target, undefined);
+      if (result.count === 0) {
+        await interaction.reply({
+          content: target
+            ? `❌ Could not find configured Twitch streamer matching \`${target}\`.`
+            : '❌ No Twitch streamers configured in config.json.',
+          ephemeral: true,
+        });
+        return;
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(0x9146ff)
+        .setTitle('🟣 Twitch Notification Role Cleared')
+        .setDescription(`Notification role ping removed (notifications will be posted without role ping).`)
+        .addFields(
+          { name: '🎯 Streamer(s) Affected', value: result.targets.map((t) => `• **${t}**`).join('\n'), inline: true }
+        )
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+      return;
+    }
+
+    if (platform === 'youtube') {
+      if (!youtubeWatcher) {
+        await interaction.reply({ content: '❌ YouTube watcher is not available.', ephemeral: true });
+        return;
+      }
+
+      const result = youtubeWatcher.setChannelRole(target, undefined);
+      if (result.count === 0) {
+        await interaction.reply({
+          content: target
+            ? `❌ Could not find configured YouTube channel matching \`${target}\`.`
+            : '❌ No YouTube channels configured in config.json.',
+          ephemeral: true,
+        });
+        return;
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(0xff0000)
+        .setTitle('🔴 YouTube Notification Role Cleared')
+        .setDescription(`Notification role ping removed (notifications will be posted without role ping).`)
+        .addFields(
+          { name: '🎯 Channel(s) Affected', value: result.targets.map((t) => `• **${t}**`).join('\n'), inline: true }
+        )
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+      return;
+    }
+
+    if (platform === 'announcements') {
+      if (config) {
+        config.discord.announcementRoleId = undefined;
+      }
+      if (stateStore) {
+        const overrides = stateStore.getSection<{ announcements?: string }>('roleOverrides') || {};
+        delete overrides.announcements;
+        stateStore.setSection('roleOverrides', overrides);
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(0x5865f2)
+        .setTitle('📢 Announcements Role Cleared')
+        .setDescription('Default announcement role ping removed.')
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+      return;
+    }
+  }
+
+  if (subcommand === 'roles') {
+    const embed = new EmbedBuilder()
+      .setColor(0x5865f2)
+      .setTitle('👥 DiscordHerald Notification Roles Overview')
+      .setDescription('Current role mention configuration across all platforms and targets:')
+      .setTimestamp();
+
+    // 1. Twitch Streamers
+    if (twitchWatcher) {
+      const streamers = twitchWatcher.getStreamers();
+      if (streamers.length > 0) {
+        const twitchLines = streamers.map((s) => {
+          const roleStr = s.roleId ? `<@&${s.roleId}>` : '*None (No Ping)*';
+          const chanStr = s.discordChannelId ? `<#${s.discordChannelId}>` : '*Not Set*';
+          return `• **${s.username}**: ${roleStr} ➜ Channel: ${chanStr}`;
+        });
+        embed.addFields({
+          name: '🟣 Twitch Stream Alerts',
+          value: twitchLines.join('\n'),
+          inline: false,
+        });
+      } else {
+        embed.addFields({
+          name: '🟣 Twitch Stream Alerts',
+          value: '*No streamers configured.*',
+          inline: false,
+        });
+      }
+    }
+
+    // 2. YouTube Channels
+    if (youtubeWatcher) {
+      const channels = youtubeWatcher.getChannels();
+      if (channels.length > 0) {
+        const ytLines = channels.map((c) => {
+          const roleStr = c.roleId ? `<@&${c.roleId}>` : '*None (No Ping)*';
+          const chanStr = c.discordChannelId ? `<#${c.discordChannelId}>` : '*Not Set*';
+          const name = c.channelName || c.channelId;
+          return `• **${name}**: ${roleStr} ➜ Channel: ${chanStr}`;
+        });
+        embed.addFields({
+          name: '🔴 YouTube Video Alerts',
+          value: ytLines.join('\n'),
+          inline: false,
+        });
+      } else {
+        embed.addFields({
+          name: '🔴 YouTube Video Alerts',
+          value: '*No channels configured.*',
+          inline: false,
+        });
+      }
+    }
+
+    // 3. Announcements / Other
+    const annRole = config?.discord.announcementRoleId;
+    const annChan = config?.discord.announcementChannelId;
+    const annRoleStr = annRole ? `<@&${annRole}>` : '*None (No Ping)*';
+    const annChanStr = annChan ? `<#${annChan}>` : '*None (Uses command channel)*';
+
+    embed.addFields({
+      name: '📢 Server Announcements (/announce)',
+      value: `• **Default Role**: ${annRoleStr}\n• **Default Channel**: ${annChanStr}`,
+      inline: false,
+    });
+
+    embed.setFooter({
+      text: 'Use /herald setrole or /herald clearrole to modify notification roles.',
+    });
+
+    await interaction.reply({ embeds: [embed], ephemeral: true });
     return;
   }
 }

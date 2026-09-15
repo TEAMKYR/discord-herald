@@ -18,6 +18,9 @@ A modular, production-ready Discord bot built with **TypeScript** and **discord.
   - Modular `BaseWatcher` base class allows adding any custom platform (Kick, Twitter/X, TikTok, Podcast RSS) in minutes.
 - ⚡ **Interactive Slash Commands**:
   - `/herald status`: Check the live/offline health status and last checked time of all configured streamers.
+  - `/herald roles`: View all configured notification roles across Twitch, YouTube, and Announcements.
+  - `/herald setrole <platform> <role> [target]`: Dynamically configure notification roles for Twitch streamers, YouTube channels, or Announcements/Other (persisted across restarts).
+  - `/herald clearrole <platform> [target]`: Remove notification role pings for Twitch, YouTube, or Announcements.
   - `/herald test <platform>`: Preview test notification embeds directly in your channel.
   - `/herald check`: Trigger an immediate manual polling check across all platforms.
   - `/announce send`: Broadcast an immediate announcement.

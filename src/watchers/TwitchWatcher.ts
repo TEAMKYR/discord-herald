@@ -43,6 +43,9 @@ export class TwitchWatcher extends BaseWatcher {
     super(stateStore);
     this.config = config;
 
+    // Apply any persisted role overrides
+    this.applyRoleOverrides();
+
     // Initialize in-memory status tracking for each configured streamer
     for (const streamer of this.config.streamers) {
       const key = streamer.username.toLowerCase();
@@ -55,6 +58,44 @@ export class TwitchWatcher extends BaseWatcher {
         lastEventTime: null,
       });
     }
+  }
+
+  public applyRoleOverrides(): void {
+    const overrides = this.stateStore.getSection<{ twitch?: Record<string, string> }>('roleOverrides');
+    if (overrides?.twitch) {
+      for (const streamer of this.config.streamers) {
+        const key = streamer.username.toLowerCase();
+        if (key in overrides.twitch) {
+          streamer.roleId = overrides.twitch[key] || undefined;
+        }
+      }
+    }
+  }
+
+  public getStreamers(): StreamerTarget[] {
+    return this.config.streamers;
+  }
+
+  public setStreamerRole(username?: string, roleId?: string): { count: number; targets: string[] } {
+    const updatedTargets: string[] = [];
+    const overrides = this.stateStore.getSection<{ twitch?: Record<string, string> }>('roleOverrides') || {};
+    if (!overrides.twitch) overrides.twitch = {};
+
+    for (const streamer of this.config.streamers) {
+      const key = streamer.username.toLowerCase();
+      if (!username || key === username.toLowerCase()) {
+        streamer.roleId = roleId || undefined;
+        if (roleId) {
+          overrides.twitch[key] = roleId;
+        } else {
+          delete overrides.twitch[key];
+        }
+        updatedTargets.push(streamer.username);
+      }
+    }
+
+    this.stateStore.setSection('roleOverrides', overrides);
+    return { count: updatedTargets.length, targets: updatedTargets };
   }
 
   public isEnabled(): boolean {

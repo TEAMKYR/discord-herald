@@ -156,6 +156,89 @@ async function runMockTests() {
     throw new Error('YouTube payload structure validation failed.');
   }
 
+  // Test 6: Dynamic Role Management & Persistence for Twitch
+  console.log('\n6️⃣ Testing Dynamic Role Configuration & Persistence for Twitch...');
+  // Change role dynamically
+  const newTwitchRole = '999111222333444555';
+  const twitchSetResult = twitchWatcher.setStreamerRole('shroud', newTwitchRole);
+  if (twitchSetResult.count !== 1 || !twitchSetResult.targets.includes('shroud')) {
+    throw new Error('Twitch setStreamerRole failed to update target.');
+  }
+
+  const updatedTwitchPayload = await twitchWatcher.generateTestPayload('shroud');
+  if (!updatedTwitchPayload?.content.includes(`<@&${newTwitchRole}>`)) {
+    throw new Error('Twitch notification payload did not reflect the new dynamic role.');
+  }
+  console.log('   ✅ Dynamic Twitch role update and payload verification passed.');
+
+  // Verify persistence in StateStore
+  const overrides = store.getSection<{ twitch?: Record<string, string> }>('roleOverrides');
+  if (overrides?.twitch?.['shroud'] !== newTwitchRole) {
+    throw new Error('Twitch role override was not persisted to StateStore.');
+  }
+  console.log('   ✅ Twitch role override persisted in StateStore.');
+
+  // Test clear role
+  twitchWatcher.setStreamerRole('shroud', undefined);
+  const clearedTwitchPayload = await twitchWatcher.generateTestPayload('shroud');
+  if (clearedTwitchPayload?.content.includes('<@&')) {
+    throw new Error('Twitch notification payload still contained role ping after clearing.');
+  }
+  console.log('   ✅ Twitch role cleared successfully.');
+
+  // Test 7: Dynamic Role Configuration & Persistence for YouTube
+  console.log('\n7️⃣ Testing Dynamic Role Configuration & Persistence for YouTube...');
+  const newYtRole = '888777666555444333';
+  const ytSetResult = youtubeWatcher.setChannelRole('Google Developers', newYtRole);
+  if (ytSetResult.count !== 1) {
+    throw new Error('YouTube setChannelRole failed to match by channelName.');
+  }
+
+  const updatedYtPayload = await youtubeWatcher.generateTestPayload('UC_x5XG1OV2P6uZZ5FSM9Ttw');
+  if (!updatedYtPayload?.content.includes(`<@&${newYtRole}>`)) {
+    throw new Error('YouTube notification payload did not reflect the new dynamic role.');
+  }
+  console.log('   ✅ Dynamic YouTube role update and payload verification passed.');
+
+  // Test 8: Rehydration of Watchers with Persistent StateStore Overrides
+  console.log('\n8️⃣ Testing Rehydration of Watcher Role Overrides from StateStore...');
+  // Save an override into store
+  store.setSection('roleOverrides', {
+    twitch: { shroud: '777111222333444555' },
+    youtube: { 'uc_x5xg1ov2p6uzz5fsm9ttw': '666111222333444555' },
+    announcements: '555111222333444555',
+  });
+  store.save();
+
+  // Create fresh watcher instances to simulate bot restart
+  const reloadedTwitchWatcher = new TwitchWatcher(
+    {
+      enabled: true,
+      clientId: 'mock_client_id',
+      clientSecret: 'mock_client_secret',
+      streamers: [{ username: 'shroud', discordChannelId: '123' }],
+    },
+    store
+  );
+  const reloadedYtWatcher = new YouTubeWatcher(
+    {
+      enabled: true,
+      channels: [{ channelId: 'UC_x5XG1OV2P6uZZ5FSM9Ttw', channelName: 'Google Developers', discordChannelId: '123' }],
+    },
+    store
+  );
+
+  const reloadedTwitchPayload = await reloadedTwitchWatcher.generateTestPayload('shroud');
+  if (!reloadedTwitchPayload?.content.includes('<@&777111222333444555>')) {
+    throw new Error('Reloaded TwitchWatcher failed to restore role override.');
+  }
+
+  const reloadedYtPayload = await reloadedYtWatcher.generateTestPayload('UC_x5XG1OV2P6uZZ5FSM9Ttw');
+  if (!reloadedYtPayload?.content.includes('<@&666111222333444555>')) {
+    throw new Error('Reloaded YouTubeWatcher failed to restore role override.');
+  }
+  console.log('   ✅ Watcher rehydration with persistent role overrides verified.');
+
   console.log('\n🎉 ALL TESTS PASSED SUCCESSFULLY!');
 }
 
