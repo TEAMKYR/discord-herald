@@ -75,7 +75,7 @@ export class DiscordService {
         .addSubcommand((sub) =>
           sub
             .setName('test')
-            .setDescription('Send a test notification embed in the current channel')
+            .setDescription('Preview a test notification (only visible to you)')
             .addStringOption((opt) =>
               opt
                 .setName('platform')

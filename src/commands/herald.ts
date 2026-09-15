@@ -102,19 +102,11 @@ export async function handleHeraldCommand(
       return;
     }
 
-    // Override target channel to current channel where command was executed
-    testPayload.discordChannelId = interaction.channelId;
-
-    const sent = await discordService.sendNotification(testPayload);
-    if (sent) {
-      await interaction.editReply({
-        content: `✅ Test notification sent for **${watcher.name}** in <#${interaction.channelId}>!`,
-      });
-    } else {
-      await interaction.editReply({
-        content: `❌ Failed to send test notification. Check bot permissions (Send Messages, Embed Links).`,
-      });
-    }
+    await interaction.editReply({
+      content: testPayload.content,
+      embeds: [testPayload.embed],
+      components: testPayload.components || [],
+    });
     return;
   }
 

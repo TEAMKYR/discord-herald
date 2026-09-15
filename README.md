@@ -21,7 +21,7 @@ A modular, production-ready Discord bot built with **TypeScript** and **discord.
   - `/herald roles`: View all configured notification roles across Twitch, YouTube, and Announcements.
   - `/herald setrole <platform> <role> [target]`: Dynamically configure notification roles for Twitch streamers, YouTube channels, or Announcements/Other (persisted across restarts).
   - `/herald clearrole <platform> [target]`: Remove notification role pings for Twitch, YouTube, or Announcements.
-  - `/herald test <platform>`: Preview test notification embeds directly in your channel.
+  - `/herald test <platform>`: Preview a private test notification (only visible to you).
   - `/herald check`: Trigger an immediate manual polling check across all platforms.
   - `/announce send`: Broadcast an immediate announcement.
   - `/announce schedule`: Schedule an announcement for any future time with automatic role pings (e.g. `time: 30m`, `time: 2h`, `time: 2026-09-05 18:00` in PST/PDT).
